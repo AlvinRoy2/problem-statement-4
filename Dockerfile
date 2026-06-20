@@ -1,5 +1,5 @@
 # Stage 1: Build the React frontend
-FROM node:18-alpine AS frontend-builder
+FROM node:22-alpine AS frontend-builder
 WORKDIR /app/frontend
 
 # Accept frontend environment variables during build
@@ -12,7 +12,7 @@ COPY frontend/ ./
 RUN npm run build
 
 # Stage 2: Build the Node.js backend
-FROM node:18-alpine AS backend-builder
+FROM node:22-alpine AS backend-builder
 WORKDIR /app/backend
 COPY backend/package*.json ./
 RUN npm install
@@ -20,7 +20,7 @@ COPY backend/ ./
 RUN npm run build
 
 # Stage 3: Production image
-FROM node:18-alpine
+FROM node:22-alpine
 WORKDIR /app/backend
 
 # Copy backend package.json and install only production dependencies
