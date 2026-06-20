@@ -30,14 +30,15 @@ describe('Carbon Routes Integration', () => {
         const res = await request(app)
             .post('/api/carbon/log')
             .send({
-                category: 'Transport',
+                category: 'transport',
                 activity_type: 'Driving',
                 amount: 10,
                 co2_emission_kg: 2.5
             });
 
         expect(res.status).toBe(201);
-        expect(res.body).toEqual({ id: 5 });
+        expect(res.body).toHaveProperty('id', 5);
+        expect(res.body).toHaveProperty('message');
     });
 
     test('POST /api/carbon/log should handle failure', async () => {
@@ -47,7 +48,7 @@ describe('Carbon Routes Integration', () => {
 
         const res = await request(app)
             .post('/api/carbon/log')
-            .send({});
+            .send({ category: 'transport', activity_type: 'x', amount: 1, co2_emission_kg: 0 });
 
         expect(res.status).toBe(500);
     });

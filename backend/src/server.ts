@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import express from 'express';
+import express, { type Request, type Response, type NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
@@ -12,42 +12,76 @@ import { getInsights } from './services/aiService';
 const app = express();
 const PORT = process.env.PORT || 4000;
 
+/** Security headers via Helmet — CSP configured to allow Google Fonts and Maps */
 app.use(helmet({
-    contentSecurityPolicy: false, // Disabling CSP locally for Google Maps/Translate to work easily
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", 'https://www.googletagmanager.com', 'https://maps.googleapis.com'],
+            styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+            fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+            frameSrc: ["'self'", 'https://www.google.com'],
+            imgSrc: ["'self'", 'data:', 'https://maps.gstatic.com', 'https://maps.googleapis.com'],
+            connectSrc: ["'self'", 'https://www.google-analytics.com'],
+        },
+    },
 }));
-app.use(cors());
-app.use(express.json());
 
+/** CORS — in production, restrict to the deployed origin */
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',')
+    : ['http://localhost:5173', 'http://localhost:4000'];
+
+app.use(cors({
+    origin: (origin, callback) => {
+        // Allow requests with no origin (server-to-server, mobile apps, curl)
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error(`Origin ${origin} not allowed by CORS`));
+        }
+    },
+    credentials: true,
+}));
+
+/** Limit request body size to prevent payload-based attacks */
+app.use(express.json({ limit: '10kb' }));
+
+/** Global API rate limiter — 100 requests per 15 minutes per IP */
 const apiLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes)
+    windowMs: 15 * 60 * 1000,
+    max: 100,
     standardHeaders: true,
     legacyHeaders: false,
+    message: { error: 'Too many requests, please try again later.' },
 });
 
 app.use('/api/', apiLimiter);
 
-// Centralized error handling
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-    console.error(err.stack);
-    res.status(500).json({ error: 'Internal Server Error' });
-});
-
+// ─── Routes ───────────────────────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
 app.use('/api/carbon', carbonRoutes);
 app.use('/api/ocr', ocrRoutes);
 app.get('/api/ai/insights', getInsights);
 
-app.get('/health', (req, res) => {
-    res.json({ status: 'OK', type: 'Monolith (Refactored)' });
+/** Health check endpoint */
+app.get('/health', (_req: Request, res: Response) => {
+    res.json({ status: 'OK', type: 'Monolith', timestamp: new Date().toISOString() });
 });
 
-// Serve static files from the React frontend app
+// ─── Static Frontend ──────────────────────────────────────────────────────────
 const frontendDistPath = path.join(__dirname, '../../frontend/dist');
 app.use(express.static(frontendDistPath));
 
-app.get('*', (req, res) => {
+app.get('*', (_req: Request, res: Response) => {
     res.sendFile(path.join(frontendDistPath, 'index.html'));
+});
+
+// ─── Global Error Handler (MUST be after routes) ──────────────────────────────
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+    console.error('[Server Error]', err.message);
+    res.status(500).json({ error: 'An internal server error occurred.' });
 });
 
 if (process.env.NODE_ENV !== 'test') {

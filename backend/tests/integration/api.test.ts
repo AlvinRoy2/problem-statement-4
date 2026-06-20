@@ -7,7 +7,7 @@ describe('EcoTrack API Integration Tests', () => {
             const response = await request(app).get('/health');
             expect(response.status).toBe(200);
             expect(response.body).toHaveProperty('status', 'OK');
-            expect(response.body).toHaveProperty('type', 'Monolith (Refactored)');
+            expect(response.body).toHaveProperty('type', 'Monolith');
         });
     });
 
@@ -39,7 +39,7 @@ describe('EcoTrack API Integration Tests', () => {
                 });
             
             expect(response.status).toBe(401);
-            expect(response.body).toHaveProperty('error', 'Invalid email or password');
+            expect(response.body).toHaveProperty('error', 'Invalid email or password.');
         });
     });
 });
