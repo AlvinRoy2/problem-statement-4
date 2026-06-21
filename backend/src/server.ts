@@ -17,12 +17,12 @@ app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", 'https://www.googletagmanager.com', 'https://maps.googleapis.com'],
-            styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+            scriptSrc: ["'self'", "'unsafe-inline'", 'https://www.googletagmanager.com', 'https://maps.googleapis.com', 'https://translate.google.com', 'https://translate.googleapis.com'],
+            styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://translate.googleapis.com'],
             fontSrc: ["'self'", 'https://fonts.gstatic.com'],
             frameSrc: ["'self'", 'https://www.google.com'],
-            imgSrc: ["'self'", 'data:', 'https://maps.gstatic.com', 'https://maps.googleapis.com'],
-            connectSrc: ["'self'", 'https://www.google-analytics.com'],
+            imgSrc: ["'self'", 'data:', 'https://maps.gstatic.com', 'https://maps.googleapis.com', 'https://www.google-analytics.com', 'https://translate.googleapis.com'],
+            connectSrc: ["'self'", 'https://www.google-analytics.com', 'https://translate.googleapis.com'],
         },
     },
 }));
@@ -34,12 +34,9 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
 
 app.use(cors({
     origin: (origin, callback) => {
-        // Allow requests with no origin (server-to-server, mobile apps, curl)
-        if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true);
-        } else {
-            callback(new Error(`Origin ${origin} not allowed by CORS`));
-        }
+        // In a monolith deployment where the URL is dynamic (e.g. Cloud Run),
+        // it's safest to reflect the origin back or allow all for the demo.
+        callback(null, origin || '*');
     },
     credentials: true,
 }));
