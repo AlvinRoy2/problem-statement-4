@@ -3,7 +3,6 @@ FROM node:22-alpine AS frontend-builder
 WORKDIR /app/frontend
 
 # Accept frontend environment variables during build
-ARG VITE_GOOGLE_MAPS_API_KEY
 ARG VITE_GOOGLE_ANALYTICS_ID
 
 COPY frontend/package*.json ./

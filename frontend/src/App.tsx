@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Leaf, Activity, Trophy, AlertCircle, Bot, TrendingUp, Upload, MapPin } from 'lucide-react';
+import { Leaf, Activity, Trophy, AlertCircle, Bot, TrendingUp, Upload, CheckCircle2 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -7,7 +7,6 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 declare global {
   interface Window {
     __ENV__?: {
-      VITE_GOOGLE_MAPS_API_KEY: string;
       VITE_GOOGLE_ANALYTICS_ID: string;
     };
   }
@@ -108,7 +107,7 @@ export default function App() {
   const milesSaved = Math.floor(totalPoints * 2.5);
 
   const systemStatus = isHealthError ? 'System Offline' : 'System Online';
-  const mapsApiKey = window.__ENV__?.VITE_GOOGLE_MAPS_API_KEY || (import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined);
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-100 flex flex-col p-4 md:p-8 font-sans overflow-x-hidden">
@@ -450,37 +449,44 @@ export default function App() {
             </div>
           </motion.section>
 
-          {/* ── Local Eco Spots Map ── */}
+          {/* ── Daily Eco Challenges ── */}
           <motion.section
             variants={itemVariants}
-            aria-label="Map of local eco-friendly recycling centers and stores"
+            aria-label="Daily Eco Challenges for carbon reduction"
             className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white p-8 overflow-hidden relative"
           >
             <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-3">
               <div className="bg-emerald-100 p-2 rounded-lg" aria-hidden="true">
-                <MapPin className="w-6 h-6 text-emerald-600" />
+                <CheckCircle2 className="w-6 h-6 text-emerald-600" />
               </div>
-              Local Eco Spots
+              Daily Eco Challenges
             </h2>
-            <div className="w-full h-48 rounded-2xl overflow-hidden border-2 border-gray-100 bg-gray-50 flex items-center justify-center relative z-10 shadow-inner">
-              {mapsApiKey ? (
-                <iframe
-                  title="Map of nearby eco-friendly recycling centers and stores"
-                  width="100%"
-                  height="100%"
-                  frameBorder="0"
-                  style={{ border: 0 }}
-                  src={`https://www.google.com/maps/embed/v1/search?q=recycling+centers+OR+eco-friendly+stores&key=${mapsApiKey}`}
-                  allowFullScreen
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                />
-              ) : (
-                <p className="text-gray-400 text-sm text-center px-4">
-                  Map unavailable. Set <code>VITE_GOOGLE_MAPS_API_KEY</code> to enable.
-                </p>
-              )}
-              <div className="absolute inset-0 pointer-events-none border border-emerald-500/20 rounded-2xl" aria-hidden="true" />
+            <div className="space-y-4">
+              <div className="bg-gray-50 rounded-2xl p-4 flex items-center gap-4 border border-gray-100 hover:border-emerald-200 transition-colors group cursor-pointer" role="button" tabIndex={0} aria-label="Complete challenge: Meatless Monday. Earn 50 points.">
+                <div className="w-6 h-6 rounded-full border-2 border-emerald-500 flex items-center justify-center group-hover:bg-emerald-500 transition-colors" aria-hidden="true">
+                  <CheckCircle2 className="w-4 h-4 text-white opacity-0 group-hover:opacity-100" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-gray-800 text-sm">Meatless Monday</h3>
+                  <p className="text-xs text-gray-500 mt-1">Skip meat for one day to drastically reduce methane emissions.</p>
+                </div>
+                <div className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold" aria-hidden="true">
+                  +50 pts
+                </div>
+              </div>
+              
+              <div className="bg-gray-50 rounded-2xl p-4 flex items-center gap-4 border border-gray-100 hover:border-emerald-200 transition-colors group cursor-pointer" role="button" tabIndex={0} aria-label="Complete challenge: Zero Waste Commute. Earn 100 points.">
+                <div className="w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center group-hover:border-emerald-500 transition-colors" aria-hidden="true">
+                  <CheckCircle2 className="w-4 h-4 text-white opacity-0 group-hover:opacity-100" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-gray-800 text-sm">Zero Waste Commute</h3>
+                  <p className="text-xs text-gray-500 mt-1">Bike or take public transit to work instead of driving.</p>
+                </div>
+                <div className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold" aria-hidden="true">
+                  +100 pts
+                </div>
+              </div>
             </div>
           </motion.section>
         </div>

@@ -3,6 +3,8 @@ import express, { type Request, type Response, type NextFunction } from 'express
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import hpp from 'hpp';
+import cookieParser from 'cookie-parser';
 import path from 'path';
 import fs from 'fs';
 import authRoutes from './routes/authRoutes';
@@ -13,19 +15,25 @@ import { getInsights } from './services/aiService';
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-/** Security headers via Helmet — CSP configured to allow Google Fonts and Maps */
+/** Security headers via Helmet — strict Defense-in-Depth configuration */
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", 'https://www.googletagmanager.com', 'https://maps.googleapis.com', 'https://translate.google.com', 'https://translate.googleapis.com'],
+            scriptSrc: ["'self'", 'https://www.googletagmanager.com', 'https://translate.google.com', 'https://translate.googleapis.com'],
             styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://translate.googleapis.com'],
             fontSrc: ["'self'", 'https://fonts.gstatic.com'],
             frameSrc: ["'self'", 'https://www.google.com'],
-            imgSrc: ["'self'", 'data:', 'https://maps.gstatic.com', 'https://maps.googleapis.com', 'https://www.google-analytics.com', 'https://translate.googleapis.com'],
+            imgSrc: ["'self'", 'data:', 'https://www.google-analytics.com', 'https://translate.googleapis.com'],
             connectSrc: ["'self'", 'https://www.google-analytics.com', 'https://translate.googleapis.com'],
+            objectSrc: ["'none'"],
+            upgradeInsecureRequests: [],
         },
     },
+    hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
+    frameguard: { action: 'deny' },
+    noSniff: true,
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
 }));
 
 /** CORS — in production, restrict to the deployed origin */
@@ -44,6 +52,12 @@ app.use(cors({
 
 /** Limit request body size to prevent payload-based attacks */
 app.use(express.json({ limit: '10kb' }));
+
+/** Parse cookies securely */
+app.use(cookieParser());
+
+/** Prevent HTTP Parameter Pollution attacks */
+app.use(hpp());
 
 /** Global API rate limiter — 100 requests per 15 minutes per IP */
 const apiLimiter = rateLimit({
@@ -79,12 +93,10 @@ app.get('*', (_req: Request, res: Response, next: NextFunction) => {
         }
         
         // Safely inject runtime environment variables for the frontend
-        const mapsKey = process.env.VITE_GOOGLE_MAPS_API_KEY || '';
         const analyticsId = process.env.VITE_GOOGLE_ANALYTICS_ID || '';
         
         const envScript = `<script>
             window.__ENV__ = {
-                VITE_GOOGLE_MAPS_API_KEY: "${mapsKey}",
                 VITE_GOOGLE_ANALYTICS_ID: "${analyticsId}"
             };
         </script>`;

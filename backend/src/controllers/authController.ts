@@ -9,16 +9,16 @@ const JWT_EXPIRES_IN = (process.env.JWT_EXPIRES_IN || '24h') as `${number}${'s' 
 
 /** Zod schema for user registration input */
 export const RegisterSchema = z.object({
-    name: z.string().min(1, 'Name is required').max(100),
-    email: z.string().email('Invalid email address'),
+    name: z.string().trim().min(1, 'Name is required').max(100).regex(/^[^<>]*$/, 'Name contains invalid HTML characters'),
+    email: z.string().trim().email('Invalid email address'),
     password: z.string().min(8, 'Password must be at least 8 characters'),
-});
+}).strict();
 
 /** Zod schema for user login input */
 export const LoginSchema = z.object({
     email: z.string().email('Invalid email address'),
     password: z.string().min(1, 'Password is required'),
-});
+}).strict();
 
 export type RegisterInput = z.infer<typeof RegisterSchema>;
 export type LoginInput = z.infer<typeof LoginSchema>;
@@ -46,8 +46,16 @@ export const register = async (req: Request, res: Response): Promise<void> => {
                     // SQLite UNIQUE constraint violation
                     return res.status(409).json({ error: 'An account with this email already exists.' });
                 }
-                const token = jwt.sign({ userId: this.lastID }, JWT_SECRET, { expiresIn: '24h' });
-                res.status(201).json({ user: { id: this.lastID, email, name }, token });
+                const token = jwt.sign({ userId: this.lastID }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+            
+            res.cookie('token', token, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'strict',
+                maxAge: 24 * 60 * 60 * 1000 // 1 day
+            });
+
+            res.status(201).json({ message: 'User registered successfully' });
             }
         );
     } catch {
@@ -69,7 +77,15 @@ export const login = (req: Request, res: Response): void => {
         if (!valid) {
             return res.status(401).json({ error: 'Invalid email or password.' });
         }
-        const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '24h' });
-        res.json({ user: { id: user.id, email: user.email, name: user.name }, token });
+        const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+        
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 24 * 60 * 60 * 1000 // 1 day
+        });
+
+        res.json({ user: { id: user.id, email: user.email, name: user.name }, message: 'Login successful' });
     });
 };
