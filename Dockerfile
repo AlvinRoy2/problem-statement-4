@@ -9,6 +9,8 @@ ARG VITE_GOOGLE_ANALYTICS_ID
 COPY frontend/package*.json ./
 RUN npm install
 COPY frontend/ ./
+# Copy the root .env file so Vite can read the VITE_ variables
+COPY .env /app/.env
 RUN npm run build
 
 # Stage 2: Build the Node.js backend
