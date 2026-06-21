@@ -4,6 +4,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import path from 'path';
+import fs from 'fs';
 import authRoutes from './routes/authRoutes';
 import carbonRoutes from './routes/carbonRoutes';
 import ocrRoutes from './routes/ocrRoutes';
@@ -70,8 +71,30 @@ app.get('/health', (_req: Request, res: Response) => {
 const frontendDistPath = path.join(__dirname, '../../frontend/dist');
 app.use(express.static(frontendDistPath));
 
-app.get('*', (_req: Request, res: Response) => {
-    res.sendFile(path.join(frontendDistPath, 'index.html'));
+app.get('*', (_req: Request, res: Response, next: NextFunction) => {
+    const indexPath = path.join(frontendDistPath, 'index.html');
+    fs.readFile(indexPath, 'utf8', (err, data) => {
+        if (err) {
+            return next(err); // Pass to global error handler
+        }
+        
+        // Safely inject runtime environment variables for the frontend
+        const mapsKey = process.env.VITE_GOOGLE_MAPS_API_KEY || '';
+        const analyticsId = process.env.VITE_GOOGLE_ANALYTICS_ID || '';
+        
+        const envScript = `<script>
+            window.__ENV__ = {
+                VITE_GOOGLE_MAPS_API_KEY: "${mapsKey}",
+                VITE_GOOGLE_ANALYTICS_ID: "${analyticsId}"
+            };
+        </script>`;
+        
+        // Replace placeholders and inject script
+        let html = data.replace(/%VITE_GOOGLE_ANALYTICS_ID%/g, analyticsId);
+        html = html.replace('</head>', `${envScript}</head>`);
+        
+        res.send(html);
+    });
 });
 
 // ─── Global Error Handler (MUST be after routes) ──────────────────────────────

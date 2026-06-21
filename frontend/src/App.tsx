@@ -4,6 +4,15 @@ import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
+declare global {
+  interface Window {
+    __ENV__?: {
+      VITE_GOOGLE_MAPS_API_KEY: string;
+      VITE_GOOGLE_ANALYTICS_ID: string;
+    };
+  }
+}
+
 const fetchHealth = async () => {
   const res = await fetch('/health');
   if (!res.ok) throw new Error('Network response was not ok');
@@ -99,7 +108,7 @@ export default function App() {
   const milesSaved = Math.floor(totalPoints * 2.5);
 
   const systemStatus = isHealthError ? 'System Offline' : 'System Online';
-  const mapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
+  const mapsApiKey = window.__ENV__?.VITE_GOOGLE_MAPS_API_KEY || (import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-100 flex flex-col p-4 md:p-8 font-sans overflow-x-hidden">
